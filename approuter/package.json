@@ -1,0 +1,15 @@
+{
+  "name": "btp-cf-mcp-approuter",
+  "version": "0.1.0",
+  "description": "Standalone SAP BTP Application Router for Python MCP Server",
+  "private": true,
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@sap/approuter": "^16.0.0"
+  },
+  "scripts": {
+    "start": "node node_modules/@sap/approuter/approuter.js"
+  }
+}

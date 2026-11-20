@@ -1,0 +1,104 @@
+_schema-version: "3.2"
+ID: btp-cf-mcp
+version: 0.1.0
+description: SAP BTP Cloud Foundry Python MCP Server with Standalone Approuter & XSUAA
+
+parameters:
+  enable-parallel-deployments: true
+
+modules:
+  # ==========================================================================
+  # 1. Standalone Node.js Approuter Module (Entrypoint / OAuth2 & JWT Gateway)
+  # ==========================================================================
+  - name: btp-cf-mcp-approuter
+    type: approuter.nodejs
+    path: approuter
+    build-parameters:
+      builder: custom
+      commands: []
+      ignore:
+        - "node_modules/"
+        - "default-env.json"
+    parameters:
+      disk-quota: 512M
+      memory: 256M
+      keep-existing-routes: true
+    requires:
+      - name: btp-cf-mcp-xsuaa
+      - name: btp-cf-mcp-destination
+      - name: mcp-server-api
+        group: destinations
+        properties:
+          name: mcp-server-backend
+          url: ~{mcp-url}
+          forwardAuthToken: true
+          timeout: 120000
+
+  # ==========================================================================
+  # 2. Python FastMCP + Starlette/FastAPI Server Module
+  # ==========================================================================
+  - name: btp-cf-mcp-srv
+    type: python
+    path: srv
+    build-parameters:
+      builder: custom
+      commands: []
+      ignore:
+        - ".venv/"
+        - "venv/"
+        - "__pycache__/"
+        - ".pytest_cache/"
+        - "tests/"
+    parameters:
+      buildpack: python_buildpack
+      disk-quota: 1024M
+      memory: 512M
+      command: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips="*"
+      health-check-type: http
+      health-check-http-endpoint: /health
+    properties:
+      APP_ENV: production
+      AUTH_MODE: xsuaa
+      PYTHONUNBUFFERED: "1"
+    provides:
+      - name: mcp-server-api
+        properties:
+          mcp-url: ${default-url}
+    requires:
+      - name: btp-cf-mcp-xsuaa
+      - name: btp-cf-mcp-destination
+
+resources:
+  # ==========================================================================
+  # XSUAA Service Instance (OAuth2 / OIDC JWT Provider)
+  # ==========================================================================
+  - name: btp-cf-mcp-xsuaa
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: xsuaa
+      service-plan: application
+      path: ./xs-security.json
+      config:
+        xsappname: btp-cf-mcp-${org}-${space}
+        tenant-mode: dedicated
+
+  # ==========================================================================
+  # SAP BTP Destination Service (Outbound SAP / OData Connectivity)
+  # ==========================================================================
+  - name: btp-cf-mcp-destination
+    type: org.cloudfoundry.managed-service
+    parameters:
+      service: destination
+      service-plan: lite
+      config:
+        HTML5Runtime_enabled: false
+        init_data:
+          instance:
+            existing_destinations_policy: update
+            destinations:
+              - Name: SAP_NORTHWIND_ODATA
+                Description: Sample Northwind OData V4 Service for MCP Tool testing
+                Type: HTTP
+                URL: https://services.odata.org/V4/Northwind/Northwind.svc
+                ProxyType: Internet
+                Authentication: NoAuthentication

@@ -1,0 +1,90 @@
+{
+  "xsappname": "btp-cf-mcp",
+  "tenant-mode": "dedicated",
+  "description": "XSUAA Security Descriptor for SAP BTP Cloud Foundry Python MCP Server",
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.mcp.read",
+      "description": "Read MCP resources, prompts, and inspect server capabilities"
+    },
+    {
+      "name": "$XSAPPNAME.mcp.execute",
+      "description": "Execute MCP tools and trigger outbound SAP BTP Destination calls"
+    },
+    {
+      "name": "$XSAPPNAME.mcp.admin",
+      "description": "Administer MCP server configuration and diagnostics"
+    },
+    {
+      "name": "uaa.user",
+      "description": "UAA User token scope required for Approuter & token exchange"
+    }
+  ],
+  "attributes": [
+    {
+      "name": "CompanyCode",
+      "description": "SAP Company Code attribute for row-level authorization",
+      "valueType": "string"
+    }
+  ],
+  "role-templates": [
+    {
+      "name": "MCPViewer",
+      "description": "Read-only access to MCP resources and prompts",
+      "scope-references": [
+        "uaa.user",
+        "$XSAPPNAME.mcp.read"
+      ],
+      "attribute-references": []
+    },
+    {
+      "name": "MCPUser",
+      "description": "Standard access to invoke MCP tools and read resources",
+      "scope-references": [
+        "uaa.user",
+        "$XSAPPNAME.mcp.read",
+        "$XSAPPNAME.mcp.execute"
+      ],
+      "attribute-references": [
+        "CompanyCode"
+      ]
+    },
+    {
+      "name": "MCPAdmin",
+      "description": "Full administrative access to the MCP server",
+      "scope-references": [
+        "uaa.user",
+        "$XSAPPNAME.mcp.read",
+        "$XSAPPNAME.mcp.execute",
+        "$XSAPPNAME.mcp.admin"
+      ],
+      "attribute-references": [
+        "CompanyCode"
+      ]
+    }
+  ],
+  "role-collections": [
+    {
+      "name": "BTP_MCP_User",
+      "description": "SAP BTP MCP Server Standard User Role Collection",
+      "role-template-references": [
+        "$XSAPPNAME.MCPUser"
+      ]
+    },
+    {
+      "name": "BTP_MCP_Admin",
+      "description": "SAP BTP MCP Server Administrator Role Collection",
+      "role-template-references": [
+        "$XSAPPNAME.MCPAdmin"
+      ]
+    }
+  ],
+  "oauth2-configuration": {
+    "token-validity": 3600,
+    "refresh-token-validity": 86400,
+    "redirect-uris": [
+      "https://*.cfapps.*.hana.ondemand.com/**",
+      "http://localhost:5000/**"
+    ]
+  }
+}

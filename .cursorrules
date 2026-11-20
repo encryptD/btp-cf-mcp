@@ -1,0 +1,11 @@
+# Cursor & IDE Coding Agent Rules for SAP BTP Cloud Foundry Python MCP Server
+
+Always read `AGENTS.md` and `docs/AGENT_HANDOVER.md` before modifying this repository.
+
+## Core Rules
+1. Target Python 3.11+ (`srv/`) with strict type annotations (`from __future__ import annotations`).
+2. Keep `XsuaaAuthASGIMiddleware` (`srv/app/auth/middleware.py`) as a pure ASGI middleware. Do NOT replace it with `starlette.middleware.base.BaseHTTPMiddleware`, which breaks MCP SSE (`/sse`) and Streamable HTTP (`/mcp`) streaming and `ContextVar` propagation.
+3. Access the authenticated SAP BTP user inside MCP tools/resources using `require_current_user()` or `get_current_user()` from `app.auth.context`.
+4. Enforce XSUAA scopes inside MCP tools using `user.check_scope("$XSAPPNAME.mcp.execute", xsappname=...)` or `user.check_scope("$XSAPPNAME.mcp.read", xsappname=...)`.
+5. Use `DestinationServiceClient` (`srv/app/btp/destination.py`) and `SapODataClient` (`srv/app/btp/odata_client.py`) for outbound SAP BTP calls so user principal propagation (`X-user-token` / JWT bearer exchange) is preserved.
+6. Whenever adding a new tool, resource, prompt, or auth rule, add corresponding async pytest coverage under `srv/tests/` and verify with `make test` and `make lint`.

@@ -1,0 +1,35 @@
+{
+  "VCAP_SERVICES": {
+    "xsuaa": [
+      {
+        "name": "btp-cf-mcp-xsuaa",
+        "label": "xsuaa",
+        "tags": ["xsuaa"],
+        "credentials": {
+          "clientid": "sb-btp-cf-mcp!t1234",
+          "clientsecret": "mock-client-secret",
+          "url": "https://mock-subdomain.authentication.eu10.hana.ondemand.com",
+          "uaadomain": "authentication.eu10.hana.ondemand.com",
+          "xsappname": "btp-cf-mcp!t1234",
+          "identityzone": "mock-subdomain",
+          "identityzoneid": "default-dev-tenant",
+          "verificationkey": ""
+        }
+      }
+    ],
+    "destination": [
+      {
+        "name": "btp-cf-mcp-destination",
+        "label": "destination",
+        "tags": ["destination"],
+        "credentials": {
+          "clientid": "sb-destination!b1234",
+          "clientsecret": "mock-dest-secret",
+          "uri": "https://destination-configuration.cfapps.eu10.hana.ondemand.com",
+          "url": "https://mock-subdomain.authentication.eu10.hana.ondemand.com",
+          "uaadomain": "authentication.eu10.hana.ondemand.com"
+        }
+      }
+    ]
+  }
+}
