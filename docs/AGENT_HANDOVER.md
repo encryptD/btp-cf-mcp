@@ -14,9 +14,10 @@
 | **Python FastAPI + FastMCP ASGI App** | Ready | `srv/app/main.py`, `srv/app/mcp_server/server.py` (`/mcp`, `/sse`, `/messages`, `/health`) |
 | **Dual-Mode XSUAA JWT Validator** | Ready | `srv/app/auth/xsuaa.py` (`sap-xssec` + `PyJWT` PEM/JWKS + local `mock` mode) |
 | **Pure ASGI Auth Middleware** | Ready | `srv/app/auth/middleware.py` + `ContextVar` in `srv/app/auth/context.py` |
-| **BTP Destination + Principal Propagation** | Ready | `srv/app/btp/destination.py`, `srv/app/btp/odata_client.py` |
-| **Sample MCP Tools, Resources, Prompts** | Ready | `srv/app/mcp_server/tools/`, `resources/`, `prompts/` |
-| **Automated Pytest Suite** | Passing | `srv/tests/test_auth.py`, `test_destination.py`, `test_mcp_server.py` |
+| **BTP Destination + Principal Propagation** | Ready | `srv/app/btp/destination.py`, `srv/app/btp/odata_client.py` (`get_entity_set`, `post_entity` with CSRF fetch) |
+| **Shared Agent Payload Bridge (AWS -> Joule)** | Ready | `srv/app/store/payload_store.py`, `srv/data/agent_payloads.json`, `srv/app/mcp_server/tools/agent_payload_tools.py` |
+| **Sample MCP Tools, Resources, Prompts** | Ready | `srv/app/mcp_server/tools/` (7 tools), `resources/`, `prompts/` |
+| **Automated Pytest Suite** | Passing | `srv/tests/test_auth.py`, `test_destination.py`, `test_mcp_server.py`, `test_agent_payload.py` |
 
 ---
 
@@ -101,6 +102,19 @@ Understanding how a user's identity flows from an MCP Client to an SAP Backend (
 2. **Add Typed Credentials in `srv/app/config.py`**:
    - Create a Pydantic model (similar to `XsuaaCredentials` and `DestinationServiceCredentials`) and a `@property` on `Settings` reading from `self.vcap_services.get("<service-label>", [])`.
 3. **Add Local Mock Entry in `srv/default-env.json.example`** and test fixture in `srv/tests/conftest.py`.
+
+---
+
+### Playbook D: Using & Extending the Shared Agent Payload Bridge (AWS -> MCP -> SAP Build Joule)
+
+See [`docs/IMPLEMENTATION_PLAN_AGENT_PAYLOAD.md`](IMPLEMENTATION_PLAN_AGENT_PAYLOAD.md) for the design specification:
+1. **Storage Architecture (`srv/app/store/payload_store.py`)**:
+   - Uses `FilePayloadStore` backed by the project-level shared file `srv/data/agent_payloads.json` by default (with atomic temp-file writes and `asyncio.Lock`), and automatically upgrades to `RedisPayloadStore` if `REDIS_URL` or a `VCAP_SERVICES` Redis binding is present.
+   - Payloads are isolated by `agent:payload:{tenant_id}:{payload_key}` (`payload_key` defaults to `"latest"`).
+2. **Bridge Tools (`srv/app/mcp_server/tools/agent_payload_tools.py`)**:
+   - `store_agent_payload(payload, source="aws", payload_key="latest")`: Overwrites the latest JSON payload for the tenant/key.
+   - `get_latest_agent_payload(payload_key="latest", include_metadata=True)`: Retrieves the stored payload + metadata for SAP Build Joule or other downstream agents.
+   - `create_s4_master_data(destination_name, entity_path, payload=None, use_stored_payload=False, payload_key="latest", fetch_csrf_token=True, propagate_principal=True)`: Posts a JSON payload (either passed directly or loaded from the shared payload store when `use_stored_payload=True`) to an S/4HANA OData service via `SapODataClient.post_entity()`, automatically handling `X-CSRF-Token: Fetch` and session cookie propagation.
 
 ---
 

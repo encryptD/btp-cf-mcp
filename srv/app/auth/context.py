@@ -54,7 +54,20 @@ class UserSecurityContext(BaseModel):
 
         # Suffix match against `<xsappname>.<suffix>` when xsappname contains service instance suffix
         dot_suffix = f".{normalized_suffix}"
-        return any(granted.endswith(dot_suffix) for granted in self.scopes)
+        if any(granted.endswith(dot_suffix) for granted in self.scopes):
+            return True
+
+        # Allow bound XSUAA technical M2M tokens (grant_type == "client_credentials")
+        # for read/execute operations (e.g. AWS agent calling store_agent_payload / create_s4_master_data)
+        if (
+            self.grant_type == "client_credentials"
+            and normalized_suffix in ("mcp.read", "mcp.execute")
+            and self.client_id
+        ):
+            if not xsappname or xsappname in self.client_id or self.client_id.startswith("sb-"):
+                return True
+
+        return False
 
     def check_scope(self, scope: str, xsappname: str | None = None) -> None:
         """Raise AuthorizationError if the required scope is missing."""

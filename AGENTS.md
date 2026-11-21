@@ -64,7 +64,9 @@ make build-mta
 | `srv/app/auth/xsuaa.py` | Dual-mode XSUAA JWT validator (`sap-xssec`, `PyJWT` PEM/JWKS, local `mock`) |
 | `srv/app/auth/middleware.py` | Pure ASGI middleware enforcing Bearer JWT auth on all non-exempt routes |
 | `srv/app/btp/destination.py` | SAP BTP Destination Service client + XSUAA Principal Propagation / Token Exchange |
-| `srv/app/btp/odata_client.py` | Async OData V2/V4 query client backed by `DestinationServiceClient` |
+| `srv/app/btp/odata_client.py` | Async OData V2/V4 query (`get_entity_set`) & write (`post_entity` with CSRF preflight) client |
+| `srv/app/store/payload_store.py` | Shared Agent Payload Store (`FilePayloadStore` at `srv/data/agent_payloads.json`, `RedisPayloadStore`, `InMemoryPayloadStore`) |
+| `srv/app/mcp_server/tools/agent_payload_tools.py` | AWS -> MCP -> SAP Build Joule payload bridge & S/4HANA master data creation tools |
 | `srv/app/mcp_server/server.py` | `FastMCP` server factory registering tools, resources, and prompts |
 | `srv/app/main.py` | FastAPI + FastMCP ASGI app factory (`create_app`) |
 | `docs/AGENT_HANDOVER.md` | Detailed handover guide, playbooks, and extension patterns |

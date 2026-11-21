@@ -22,6 +22,9 @@ async def test_mcp_server_registers_tools_resources_and_prompts() -> None:
         "check_btp_environment",
         "resolve_sap_destination",
         "query_sap_odata",
+        "store_agent_payload",
+        "get_latest_agent_payload",
+        "create_s4_master_data",
     }.issubset(tool_names)
 
     resources = await mcp.list_resources()

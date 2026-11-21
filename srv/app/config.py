@@ -102,6 +102,41 @@ class Settings(BaseSettings):
         alias="MOCK_DESTINATION_BASE_URL",
     )
 
+    # Shared Agent Payload Store configuration (AWS -> MCP -> SAP Build Joule bridge)
+    payload_store_backend: Literal["auto", "file", "redis", "memory"] = Field(
+        default="auto",
+        alias="PAYLOAD_STORE_BACKEND",
+    )
+    payload_store_file_path: str = Field(
+        default_factory=lambda: str(
+            Path(__file__).resolve().parents[1] / "data" / "agent_payloads.json"
+        ),
+        alias="PAYLOAD_STORE_FILE_PATH",
+    )
+    redis_url: str | None = Field(default=None, alias="REDIS_URL")
+
+    @property
+    def effective_redis_url(self) -> str | None:
+        """Return REDIS_URL from env or bound VCAP_SERVICES ('redis-cache' / 'redis')."""
+        if self.redis_url:
+            return self.redis_url
+        for service_key in ("redis-cache", "redis", "hyperscaler-redis"):
+            bindings = self.vcap_services.get(service_key, [])
+            if bindings:
+                creds = bindings[0].get("credentials", {}) or {}
+                uri = creds.get("uri") or creds.get("url")
+                if uri:
+                    return str(uri)
+                host = creds.get("hostname") or creds.get("host")
+                port = creds.get("port", 6379)
+                password = creds.get("password", "")
+                tls = creds.get("tls", False)
+                if host:
+                    scheme = "rediss" if tls else "redis"
+                    auth_part = f":{password}@" if password else ""
+                    return f"{scheme}://{auth_part}{host}:{port}/0"
+        return None
+
     @property
     def is_production(self) -> bool:
         """Return True when running in Cloud Foundry or APP_ENV=production."""

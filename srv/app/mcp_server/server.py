@@ -8,6 +8,7 @@ from mcp.server.fastmcp import FastMCP
 
 from app.mcp_server.prompts.sap_prompts import register_sap_prompts
 from app.mcp_server.resources.btp_resources import register_btp_resources
+from app.mcp_server.tools.agent_payload_tools import register_agent_payload_tools
 from app.mcp_server.tools.sap_odata_tools import register_sap_odata_tools
 from app.mcp_server.tools.system_tools import register_system_tools
 
@@ -36,6 +37,7 @@ def create_mcp_server(name: str = "btp-cf-mcp-server") -> FastMCP:
     )
     register_system_tools(server)
     register_sap_odata_tools(server)
+    register_agent_payload_tools(server)
     register_btp_resources(server)
     register_sap_prompts(server)
     return server
